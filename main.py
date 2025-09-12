@@ -4,6 +4,7 @@ import subprocess
 import os
 import sys
 import shutil
+import re
 
 import decky_plugin
 
@@ -45,7 +46,7 @@ class Plugin:
     def _sp_dbus_set(self, command, parameters):
         return subprocess.Popen([
             "dbus-send", "--print-reply", f"--dest={self.player}",
-            MP_PATH, PROP_SET_PATH, f'string:"{MP_MEMB_PLAYER}"',
+            MP_PATH, PROP_SET_PATH, f'string:{MP_MEMB_PLAYER}',
             f'string:"{command}"'
         ] + (parameters.split() if parameters else []),
         stdout=subprocess.PIPE,
@@ -76,36 +77,48 @@ class Plugin:
         return self._sp_dbus_set(self, "Volume", f"variant:double:{volume}")
 
     async def sp_track_status(self):
-        result =  subprocess.Popen(f"dbus-send --print-reply --dest={self.player} {MP_PATH} {PROP_PATH} \
-            string:\"{MP_MEMB_PLAYER}\" string:'PlaybackStatus' \
-            | tail -1 \
-            | cut -d \"\\\"\" -f2 | tr -d \"\n\"" \
-            ,stdout=subprocess.PIPE, shell=True, env=self._get_dbus_env(self), universal_newlines=True).communicate()[0]
-        return result
+        result = subprocess.Popen(
+            [
+                "dbus-send", "--print-reply",
+                f"--dest={self.player}", MP_PATH, PROP_PATH,
+                f'string:{MP_MEMB_PLAYER}', "string:PlaybackStatus"
+            ],
+            stdout=subprocess.PIPE, env=self._get_dbus_env(self), text=True
+        ).communicate()[0]
+        return result.strip().split('"')[-2]
 
     async def sp_track_progress(self):
-        result = subprocess.Popen(f"dbus-send --print-reply --dest={self.player} {MP_PATH} {PROP_PATH} \
-            string:\"{MP_MEMB_PLAYER}\" string:'Position' \
-            | tail -1 \
-            | rev | cut -d' ' -f 1 | rev | tr -d \"\n\"" \
-            , stdout=subprocess.PIPE, shell=True, env=self._get_dbus_env(self), universal_newlines=True).communicate()[0]
-        return result
+        result = subprocess.Popen(
+            [
+                "dbus-send", "--print-reply",
+                f"--dest={self.player}", MP_PATH, PROP_PATH,
+                f'string:{MP_MEMB_PLAYER}', "string:Position"
+            ],
+            stdout=subprocess.PIPE, env=self._get_dbus_env(self), text=True
+        ).communicate()[0]
+        return result.strip().splitlines()[-1].split()[-1]
 
     async def sp_get_volume(self):
-        result = subprocess.Popen(f"dbus-send --print-reply --dest={self.player} {MP_PATH} {PROP_PATH} \
-            string:\"{MP_MEMB_PLAYER}\" string:'Volume' \
-            | tail -1 \
-            | rev | cut -d' ' -f 1 | rev | tr -d \"\n\"" \
-            , stdout=subprocess.PIPE, shell=True, env=self._get_dbus_env(self), universal_newlines=True).communicate()[0]
-        return result
+        result = subprocess.Popen(
+            [
+                "dbus-send", "--print-reply",
+                f"--dest={self.player}", MP_PATH, PROP_PATH,
+                f'string:{MP_MEMB_PLAYER}', "string:Volume"
+            ],
+            stdout=subprocess.PIPE, env=self._get_dbus_env(self), text=True
+        ).communicate()[0]
+        return result.strip().splitlines()[-1].split()[-1]
 
     async def sp_can_seek(self):
-        result = subprocess.Popen(f"dbus-send --print-reply --dest={self.player} {MP_PATH} {PROP_PATH} \
-            string:\"{MP_MEMB_PLAYER}\" string:'CanSeek' \
-            | tail -1 \
-            | rev | cut -d' ' -f 1 | rev | tr -d \"\n\"" \
-            , stdout=subprocess.PIPE, shell=True, env=self._get_dbus_env(self), universal_newlines=True).communicate()[0]
-        return result
+        result = subprocess.Popen(
+            [
+                "dbus-send", "--print-reply",
+                f"--dest={self.player}", MP_PATH, PROP_PATH,
+                f'string:{MP_MEMB_PLAYER}', "string:CanSeek"
+            ],
+            stdout=subprocess.PIPE, env=self._get_dbus_env(self), text=True
+        ).communicate()[0]
+        return result.strip().splitlines()[-1].split()[-1]
 
     async def sp_test_volume_control(self):
         oldVolume = await self.sp_get_volume(self)
@@ -133,8 +146,8 @@ class Plugin:
                 f"--dest={orgPath}",
                 MP_PATH,
                 PROP_PATH,
-                f'string:"{MP_MEMB}"',
-                "string:'Identity'"
+                f'string:{MP_MEMB}',
+                "string:Identity"
             ],
             stdout=subprocess.PIPE,
             env=self._get_dbus_env(self),
@@ -145,20 +158,38 @@ class Plugin:
 
     async def get_meta_data(self):
         try:
-            result = subprocess.Popen(f"dbus-send --print-reply --dest={self.player} {MP_PATH} {PROP_PATH} \
-                string:\"{MP_MEMB_PLAYER}\" string:'Metadata' \
-                | grep -Ev \"^method\"                           `# Ignore the first line.`   \
-                | grep -Eo '(\"(.*)\")|(\\b[0-9][a-zA-Z0-9.]*\\b)' `# Filter interesting fiels.`\
-                | sed -E '2~2 a|'                              `# Mark odd fields.`         \
-                | tr -d '\n'                                   `# Remove all newlines.`     \
-                | sed -E 's/\\|/\\n/g'                           `# Restore newlines.`        \
-                | sed -E 's/(xesam:)|(mpris:)//'               `# Remove ns prefixes.`      \
-                | sed -E 's/^\"//'                              `# Strip leading...`         \
-                | sed -E 's/\"$//'                              `# ...and trailing quotes.`  \
-                | sed -E 's/\"+/|/'                             `# Regard "" as seperator.`  \
-                | sed -E 's/ +/ /g'                            `# Merge consecutive spaces.`",  
-                stdout=subprocess.PIPE, shell=True, env=self._get_dbus_env(self), universal_newlines=True).communicate()[0]
-        except:
+            result = subprocess.Popen(
+                [
+                    "dbus-send", "--print-reply",
+                    f"--dest={self.player}", MP_PATH, PROP_PATH,
+                    f'string:{MP_MEMB_PLAYER}', "string:Metadata"
+                ],
+                stdout=subprocess.PIPE, env=self._get_dbus_env(self), text=True
+            ).communicate()[0]
+            lines = result.splitlines()[1:]  # Skip the first "method" line
+            # Extract quoted strings or numbers
+            items = []
+            for line in lines:
+                matches = re.findall(r'"(.*?)"|\b([0-9][a-zA-Z0-9.]*)\b', line)
+                for m in matches:
+                    # m is a tuple, one of the groups will be non-empty
+                    value = m[0] if m[0] else m[1]
+                    items.append(value)
+            # Pair items into key|value, remove namespaces and quotes
+            cleaned = []
+            skip_next = False
+            for i, val in enumerate(items):
+                if skip_next:
+                    skip_next = False
+                    continue
+                key = re.sub(r'^(xesam:|mpris:)', '', val)
+                if i + 1 < len(items):
+                    value = items[i + 1]
+                    # Merge consecutive quotes into a single separator
+                    cleaned.append(f"{key}|{value}")
+                    skip_next = True
+            result = "\n".join(cleaned)
+        except Exception:
             result = "Unavailable"
         return result
     

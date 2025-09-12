@@ -27,17 +27,29 @@ class Plugin:
         return env
 
     def _sp_player_dbus(self, command, parameters):
-      
-        return subprocess.Popen(f"dbus-send --print-reply --dest={self.player} {MP_PATH} {MP_MEMB_PLAYER}.{command} \
-            {parameters} > /dev/null", stdout=subprocess.PIPE, shell=True, env=self._get_dbus_env(self), universal_newlines=True).communicate()[0]
+        return subprocess.Popen([
+            "dbus-send", "--print-reply", f"--dest={self.player}",
+            MP_PATH, f"{MP_MEMB_PLAYER}.{command}"
+        ] + (parameters.split() if parameters else []),
+        stdout=subprocess.PIPE,
+        env=self._get_dbus_env(self), text=True).communicate()[0]
 
     def _sp_dbus(self, command, parameters):
-        return subprocess.Popen(f"dbus-send --print-reply --dest={self.player} {MP_PATH} {MP_MEMB}.{command} \
-            {parameters} > /dev/null", stdout=subprocess.PIPE, shell=True, env=self._get_dbus_env(self), universal_newlines=True).communicate()[0]
+        return subprocess.Popen([
+            "dbus-send", "--print-reply", f"--dest={self.player}",
+            MP_PATH, f"{MP_MEMB}.{command}"
+        ] + (parameters.split() if parameters else []),
+        stdout=subprocess.PIPE,
+        env=self._get_dbus_env(self), text=True).communicate()[0]
 
     def _sp_dbus_set(self, command, parameters):
-        return subprocess.Popen(f"dbus-send --print-reply --dest={self.player} {MP_PATH} {PROP_SET_PATH} string:\"{MP_MEMB_PLAYER}\" \
-            string:\"{command}\" {parameters} ", stdout=subprocess.PIPE, shell=True, env=self._get_dbus_env(self), universal_newlines=True).communicate()[0]
+        return subprocess.Popen([
+            "dbus-send", "--print-reply", f"--dest={self.player}",
+            MP_PATH, PROP_SET_PATH, f'string:"{MP_MEMB_PLAYER}"',
+            f'string:"{command}"'
+        ] + (parameters.split() if parameters else []),
+        stdout=subprocess.PIPE,
+        env=self._get_dbus_env(self), text=True).communicate()[0]
 
     async def _sp_open(self, uri):
         return self._sp_player_dbus(self, "OpenUri", f"string:{uri}")
@@ -114,12 +126,22 @@ class Plugin:
         return "false"
 
     async def sp_identity(self, orgPath: str):
-        result = subprocess.Popen(f"dbus-send --print-reply --dest={orgPath} {MP_PATH} {PROP_PATH} \
-            string:\"{MP_MEMB}\" string:'Identity' \
-            | tail -1 \
-            | rev | cut -d' ' -f 1 | rev" \
-            , stdout=subprocess.PIPE, shell=True, env=self._get_dbus_env(self), universal_newlines=True).communicate()[0].replace("\"", "").replace("\n", "")
-        return result
+        result = subprocess.Popen(
+            [
+                "dbus-send",
+                "--print-reply",
+                f"--dest={orgPath}",
+                MP_PATH,
+                PROP_PATH,
+                f'string:"{MP_MEMB}"',
+                "string:'Identity'"
+            ],
+            stdout=subprocess.PIPE,
+            env=self._get_dbus_env(self),
+            text=True
+        ).communicate()[0]
+
+        return result.strip().splitlines()[-1].split()[-1].replace('"', '')
 
     async def get_meta_data(self):
         try:
@@ -163,8 +185,12 @@ class Plugin:
         return ("https://steamloopback.host/images/deckycache_musicControl/" + baseName)
 
     async def sp_list_media_players(self):
-        result = subprocess.Popen(f"dbus-send --print-reply --dest=org.freedesktop.DBus /org/freedesktop/DBus org.freedesktop.DBus.ListNames",
-        stdout=subprocess.PIPE, shell=True, env=self._get_dbus_env(self), universal_newlines=True).communicate()[0]
+        result = subprocess.Popen(
+            ["dbus-send", "--print-reply", "--dest=org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus.ListNames"],
+            stdout=subprocess.PIPE,
+            env=self._get_dbus_env(self),
+            text=True
+        ).communicate()[0]
         stripped = result.split('array [')[1].split(']')[0].replace("\n", "", 1).replace("\n", ",") \
             .replace(" ", "").replace("string", "").replace("\"", "").rstrip(',')
         services = stripped.split(',')

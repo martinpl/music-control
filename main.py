@@ -47,7 +47,7 @@ class Plugin:
         return subprocess.Popen([
             "dbus-send", "--print-reply", f"--dest={self.player}",
             MP_PATH, PROP_SET_PATH, f'string:{MP_MEMB_PLAYER}',
-            f'string:"{command}"'
+            f'string:{command}'
         ] + (parameters.split() if parameters else []),
         stdout=subprocess.PIPE,
         env=self._get_dbus_env(self), text=True).communicate()[0]
@@ -68,10 +68,10 @@ class Plugin:
         return self._sp_player_dbus(self, "Previous", "")
 
     async def sp_seek(self, amount):
-        return self._sp_player_dbus(self, "Seek", f"int64:\"{amount}\"")
+        return self._sp_player_dbus(self, "Seek", f"int64:{amount}")
 
     async def sp_set_position(self, position : int, trackid : str):
-        return self._sp_player_dbus(self, "SetPosition", f"objpath:\"{trackid}\" int64:\"{position}\"")
+        return self._sp_player_dbus(self, "SetPosition", f"objpath:{trackid} int64:{position}")
 
     async def sp_set_volume(self, volume):
         return self._sp_dbus_set(self, "Volume", f"variant:double:{volume}")
@@ -149,9 +149,7 @@ class Plugin:
                 f'string:{MP_MEMB}',
                 "string:Identity"
             ],
-            stdout=subprocess.PIPE,
-            env=self._get_dbus_env(self),
-            text=True
+            stdout=subprocess.PIPE, env=self._get_dbus_env(self), text=True
         ).communicate()[0]
 
         return result.strip().splitlines()[-1].split()[-1].replace('"', '')
@@ -218,9 +216,7 @@ class Plugin:
     async def sp_list_media_players(self):
         result = subprocess.Popen(
             ["dbus-send", "--print-reply", "--dest=org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus.ListNames"],
-            stdout=subprocess.PIPE,
-            env=self._get_dbus_env(self),
-            text=True
+            stdout=subprocess.PIPE, env=self._get_dbus_env(self), text=True
         ).communicate()[0]
         stripped = result.split('array [')[1].split(']')[0].replace("\n", "", 1).replace("\n", ",") \
             .replace(" ", "").replace("string", "").replace("\"", "").rstrip(',')

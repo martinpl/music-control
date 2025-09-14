@@ -1,8 +1,5 @@
 import {
   ButtonItem,
-  Menu,
-  MenuItem,
-  showContextMenu,
 } from "decky-frontend-lib";
 
 import { VFC } from "react";
@@ -16,6 +13,7 @@ import * as python from "./../python";
 type MediaProviderProps = {
   currentProvider: string;
 };
+
 export const MediaProviderButton: VFC<MediaProviderProps> = (
   props: MediaProviderProps
 ) => {
@@ -32,27 +30,19 @@ export const MediaProviderButton: VFC<MediaProviderProps> = (
     return state.providersToIdentity[providerIndex].name;
   };
 
-  const handleOnClick = (e: MouseEvent) =>
-    showContextMenu(
-      <Menu label="Select Media Player" cancelText="Cancel">
-        {state.providers.map((provider: string) => {
-          return (
-            <MenuItem
-              onSelected={() => {
-                python.setMediaPlayer(provider);
-                dispatch({
-                  type: AppActions.SetCurrentServiceProvider,
-                  value: provider,
-                });
-              }}
-            >
-              {getDisplayNameForProvider(provider)}
-            </MenuItem>
-          );
-        })}
-      </Menu>,
-      e.currentTarget ?? window
-    );
+  const handleOnClick = () => {
+    if (state.providers.length === 0) return;
+    
+    const currentIndex = state.providers.findIndex(p => p === props.currentProvider);
+    const nextIndex = (currentIndex + 1) % state.providers.length;
+    const nextProvider = state.providers[nextIndex];
+    
+    python.setMediaPlayer(nextProvider);
+    dispatch({
+      type: AppActions.SetCurrentServiceProvider,
+      value: nextProvider,
+    });
+  };
 
   return (
     <ButtonItem layout="below" bottomSeparator='none' onClick={handleOnClick}>

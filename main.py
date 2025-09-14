@@ -122,15 +122,6 @@ class Plugin:
 
     async def sp_test_volume_control(self):
         oldVolume = await self.sp_get_volume(self)
-
-        print("Volume test: " + oldVolume)
-        sys.stdout.flush()
-
-        if oldVolume == "":
-            return "false"
-        if oldVolume != "0":
-            return "true"
-
         await self.sp_set_volume(self, 0.01)
         newVolume = await self.sp_get_volume(self)
         if oldVolume != newVolume:

@@ -45,7 +45,7 @@ export const MediaProviderButton: VFC<MediaProviderProps> = (
   };
 
   return (
-    <ButtonItem layout="below" bottomSeparator='none' onClick={handleOnClick}>
+    <ButtonItem layout="below" bottomSeparator='none' onClick={handleOnClick} disabled={state.providers.length <= 1}>
       {props.currentProvider == ""
         ? "No Media Player Found"
         : getDisplayNameForProvider(props.currentProvider)}

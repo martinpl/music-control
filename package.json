@@ -1,29 +1,10 @@
 {
-  "name": "music-control",
-  "version": "1.1.6",
-  "description": "Music control plugin that can control any MPRIS implementation.",
+  "version": "1.1.7",
   "scripts": {
     "build": "shx rm -rf dist && rollup -c",
     "watch": "rollup -c -w",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/mirobouma/MusicControl.git"
-  },
-  "keywords": [
-    "decky",
-    "plugin",
-    "music",
-    "steam-deck",
-    "deck"
-  ],
-  "author": "Miro Bouma",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/mirobouma/MusicControl/issues"
-  },
-  "homepage": "https://github.com/mirobouma/MusicControl#readme",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^21.1.0",
     "@rollup/plugin-json": "^4.1.0",

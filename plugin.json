@@ -1,10 +1,10 @@
 {
-  "name": "MusicControl",
-  "author": "Miro Bouma",
-  "flags": [],
-  "publish": {
-    "tags": ["music", "media", "mpris"],
-    "description": "Control running media players using the DBUS interface (MPRIS). Media player has to be started through game mode.",
-    "image": "https://raw.githubusercontent.com/mirobouma/MusicControl/main/assets/screenshot.png"
-  }
+    "name": "Music Control",
+    "author": "MartinPL",
+    "flags": [],
+    "publish": {
+        "tags": ["music", "media", "mpris"],
+        "description": "Quick access for media player controls in game mode.",
+        "image": "https://raw.githubusercontent.com/martinpl/music-control/main/assets/screenshot.png"
+    }
 }
